@@ -26,15 +26,19 @@ void printIterate(const Vector<T>& vec) {
 int main()
 {
     Vector<int> vec{ 1, 2, 3 };
-    printVector(vec);
+    //printVector(vec);
     printIterate(vec);
     for (int i = 4; i < 10; ++i)
         vec.push_back(i);
-    printVector(vec);
+    //printVector(vec);
     printIterate(vec);
     while (!vec.empty())
         vec.pop_back();
-    printVector(vec);
+    //printVector(vec);
+    printIterate(vec);
+    for (int i = 1; i < 10; ++i)
+        vec.insert(vec.begin(), i);
+    //printVector(vec);
     printIterate(vec);
     return 0;
 }

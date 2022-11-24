@@ -9,43 +9,37 @@ namespace Containers {
 	class Vector {
 	public:
 		Vector() :
-			m_data(nullptr), m_size(0), m_capacity(Global::VECTOR_INIT_SIZE)
-		{
+			m_data(nullptr), m_size(0), m_capacity(Global::VECTOR_INIT_SIZE) {
 			allocate(Global::VECTOR_INIT_SIZE);
 		}
 
 		Vector(size_t size) :
-			m_size(size), m_capacity(size)
-		{
+			m_size(size), m_capacity(size) {
 			allocate(size);
 		}
 
 		Vector(size_t size, const T& init_val) :
-			m_size(size), m_capacity(size)
-		{
+			m_size(size), m_capacity(size) {
 			allocate(size);
-			fill_n(size, init_val);
+			fill_n(0, size, init_val);
 		}
 
 		Vector(std::initializer_list<T> l) :
-			m_size(l.size()), m_capacity(l.size())
-		{
+			m_size(l.size()), m_capacity(l.size()) {
 			allocate(l.size());
-			fill_range(l.begin(), l.end());
+			fill_range(0, l.begin(), l.end());
 		}
 
 		Vector(const Vector& other) :
-			m_size(other.m_size), m_capacity(other.m_capacity)
-		{
+			m_size(other.m_size), m_capacity(other.m_capacity) {
 			allocate(other.m_size);
-			fill_range(other.begin(), other.end());
+			fill_range(0, other.begin(), other.end());
 		}
 
 		Vector(Vector&& other) :
-			m_size(other.m_size), m_capacity(other.m_capacity)
-		{
+			m_size(other.m_size), m_capacity(other.m_capacity) {
 			allocate(other.m_size);
-			fill_range(other.begin(), other.end());
+			fill_range(0, other.begin(), other.end());
 		}
 
 		~Vector() {
@@ -65,7 +59,7 @@ namespace Containers {
 		void pop_back();
 
 		T& operator[](size_t);
-		
+
 		const T& operator[](size_t) const;
 
 		class Iterator {
@@ -108,6 +102,14 @@ namespace Containers {
 
 		Iterator end() const;
 
+		Iterator find(const T&) const;
+
+		Iterator insert(Iterator, const T&);
+
+		void insert(Iterator, size_t, const T&);
+
+		//template<class IT>
+		//void insert(Iterator, IT, IT);
 	private:
 		T* m_data;
 		size_t m_size;
@@ -115,12 +117,12 @@ namespace Containers {
 
 		void allocate(size_t);
 
-		void fill_n(size_t, const T&);
+		void fill_n(size_t, size_t, const T&);
 
 		void resize(size_t);
 
 		template<class IT>
-		void fill_range(IT, IT);
+		void fill_range(size_t, IT, IT);
 	};
 
 
@@ -174,92 +176,121 @@ namespace Containers {
 	}
 
 	template<typename T>
-	bool Vector<T>::Iterator::operator==(const Iterator& other)
-	{
+	typename Vector<T>::Iterator Vector<T>::find(const T& value) const {
+		for (Vector<T>::Iterator it = begin(); it != end(); ++it) {
+			if (*it == value) return it;
+		}
+		return end();
+	}
+
+	template<typename T>
+	typename Vector<T>::Iterator Vector<T>::insert(Iterator pos, const T& value) {
+		insert(pos, 1, value);
+		return pos;
+	}
+
+	template<typename T>
+	void Vector<T>::insert(Iterator pos, size_t n, const T& value) {
+		if (m_size + n > m_capacity) {
+			resize(m_size + n);
+		}
+		size_t start = pos - begin();
+		for (size_t i = m_size; i > start; --i) {
+			//std::cout << i + n << std::endl;
+			m_data[i + n - 1] = m_data[i - 1];
+		}
+		fill_n(start, n, value);
+		m_size += n;
+	}
+
+	//template<typename T> template<class IT>
+	//void Vector<T>::insert(Iterator pos, IT first, IT last) {
+	//	size_t n = last - first;
+	//	if (m_size + n > m_capacity) {
+	//		resize(m_size + n);
+	//	}
+	//	size_t start = pos - begin();
+	//	for (size_t i = m_size - 1; i >= start; --i) {
+	//		m_data[i + n] = m_data[i];
+	//	}
+	//	fill_range(start, first, last);
+	//	m_size += n;
+	//}
+
+	template<typename T>
+	bool Vector<T>::Iterator::operator==(const Iterator& other) {
 		return m_pointer == other.m_pointer;
 	}
 
 	template<typename T>
-	bool Vector<T>::Iterator::operator!=(const Iterator& other)
-	{
+	bool Vector<T>::Iterator::operator!=(const Iterator& other) {
 		return m_pointer != other.m_pointer;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator& Vector<T>::Iterator::operator++()
-	{
+	typename Vector<T>::Iterator& Vector<T>::Iterator::operator++() {
 		++m_pointer;
 		return *this;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator++(int)
-	{
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator++(int) {
 		Iterator it = *this;
 		++(*this);
 		return it;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator+(int steps)
-	{
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator+(int steps) {
 		Iterator it = *this;
 		m_pointer += steps;
 		return it;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator& Vector<T>::Iterator::operator+=(int steps)
-	{
+	typename Vector<T>::Iterator& Vector<T>::Iterator::operator+=(int steps) {
 		m_pointer += steps;
 		return *this;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator& Vector<T>::Iterator::operator--()
-	{
+	typename Vector<T>::Iterator& Vector<T>::Iterator::operator--() {
 		--m_pointer;
 		return *this;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator--(int)
-	{
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator--(int) {
 		Iterator it = *this;
 		--(*this);
 		return it;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator-(int steps)
-	{
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator-(int steps) {
 		Iterator it = *this;
 		m_pointer -= steps;
 		return it;
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator& Vector<T>::Iterator::operator-=(int steps)
-	{
+	typename Vector<T>::Iterator& Vector<T>::Iterator::operator-=(int steps) {
 		m_pointer -= steps;
 		return *this;
 	}
 
 	template<typename T>
-	size_t Vector<T>::Iterator::operator-(const Vector<T>::Iterator& other) const
-	{
+	size_t Vector<T>::Iterator::operator-(const Vector<T>::Iterator& other) const {
 		return m_pointer - other.m_pointer;
 	}
 
 	template<typename T>
-	T& Vector<T>::Iterator::operator*()
-	{
+	T& Vector<T>::Iterator::operator*() {
 		return *m_pointer;
 	}
 
 	template<typename T>
-	T* Vector<T>::Iterator::operator->()
-	{
+	T* Vector<T>::Iterator::operator->() {
 		return m_pointer;
 	}
 
@@ -269,9 +300,9 @@ namespace Containers {
 	}
 
 	template<typename T>
-	void Vector<T>::fill_n(size_t size, const T& value) {
+	void Vector<T>::fill_n(size_t start, size_t size, const T& value) {
 		for (size_t i = 0; i < size; ++i)
-			m_data[i] = value;
+			m_data[i + start] = value;
 	}
 
 	template<typename T>
@@ -288,10 +319,10 @@ namespace Containers {
 	}
 
 	template<typename T> template<class IT>
-	void Vector<T>::fill_range(IT begin, IT end) {
+	void Vector<T>::fill_range(size_t start, IT begin, IT end) {
 		size_t i = 0;
 		for (IT it = begin; it != end; ++it, ++i) {
-			m_data[i] = *it;
+			m_data[i + start] = *it;
 		}
 	}
 }
