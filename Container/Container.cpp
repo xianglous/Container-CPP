@@ -15,16 +15,27 @@ void printVector(const Vector<T>& vec) {
     }
 }
 
+template<typename T>
+void printIterate(const Vector<T>& vec) {
+    std::cout << "Vector of size " << vec.size() << std::endl;
+    for (const T & val : vec) {
+        std::cout << val << std::endl;
+    }
+}
+
 int main()
 {
     Vector<int> vec{ 1, 2, 3 };
     printVector(vec);
+    printIterate(vec);
     for (int i = 4; i < 10; ++i)
         vec.push_back(i);
     printVector(vec);
+    printIterate(vec);
     while (!vec.empty())
         vec.pop_back();
     printVector(vec);
+    printIterate(vec);
     return 0;
 }
 
