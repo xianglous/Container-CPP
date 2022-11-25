@@ -2,13 +2,14 @@
 //
 
 #include <iostream>
+#include <string>
 #include <vector>
 #include "vector.h"
 
 using namespace Containers;
 
-template<typename T>
-void printVector(const Vector<T>& vec) {
+template<typename T, template<typename...T> class V>
+void printVector(const V<T>& vec) {
     std::cout << "Vector of size " << vec.size() << std::endl;
     for (size_t i = 0; i < vec.size(); ++i) {
         std::cout << vec[i] << std::endl;
@@ -25,21 +26,19 @@ void printIterate(const Vector<T>& vec) {
 
 int main()
 {
-    Vector<int> vec{ 1, 2, 3 };
-    //printVector(vec);
-    printIterate(vec);
-    for (int i = 4; i < 10; ++i)
-        vec.push_back(i);
-    //printVector(vec);
-    printIterate(vec);
-    while (!vec.empty())
+    Vector<std::string> vec = { "1", "2", "3" };
+    std::vector<std::string> strs = { "4", "5", "6" };
+    for (const std::string& str : strs)
+        vec.push_back(str);
+    printVector(vec);
+    for (const std::string& str : strs)
+        vec.emplace_back(1, str[0]);
+    printVector(vec);
+    for (const std::string& str : strs)
+        vec.emplace(vec.begin(), 1, str[0]);
+    printVector(vec);
+    while (true)
         vec.pop_back();
-    //printVector(vec);
-    printIterate(vec);
-    for (int i = 1; i < 10; ++i)
-        vec.insert(vec.begin(), i);
-    //printVector(vec);
-    printIterate(vec);
     return 0;
 }
 

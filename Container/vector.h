@@ -1,7 +1,9 @@
 #pragma once
-#include <iostream>
 #include <initializer_list>
+#include <iostream>
+#include <utility>
 #include "globals.h"
+#include "exception.h"
 
 namespace Containers {
 
@@ -24,10 +26,10 @@ namespace Containers {
 			fill_n(0, size, init_val);
 		}
 
-		Vector(std::initializer_list<T> l) :
-			m_size(l.size()), m_capacity(l.size()) {
-			allocate(l.size());
-			fill_range(0, l.begin(), l.end());
+		Vector(std::initializer_list<T> il) :
+			m_size(il.size()), m_capacity(il.size()) {
+			allocate(il.size());
+			fill_range(0, il.begin(), il.end());
 		}
 
 		Vector(const Vector& other) :
@@ -55,6 +57,9 @@ namespace Containers {
 		void push_back(const T&);
 
 		void push_back(T&&);
+
+		template<typename...Args>
+		void emplace_back(Args&&...);
 
 		void pop_back();
 
@@ -94,6 +99,10 @@ namespace Containers {
 
 			T* operator->();
 
+			T& operator*() const;
+
+			T* operator->() const;
+
 		private:
 			T* m_pointer;
 		};
@@ -104,12 +113,20 @@ namespace Containers {
 
 		Iterator find(const T&) const;
 
-		Iterator insert(Iterator, const T&);
+		template<typename...Args>
+		Iterator emplace(const Iterator, Args&&...);
 
-		void insert(Iterator, size_t, const T&);
+		Iterator insert(const Iterator, const T&);
 
-		//template<class IT>
-		//void insert(Iterator, IT, IT);
+		Iterator insert(const Iterator, T&&);
+
+		void insert(const Iterator, size_t, const T&);
+
+		template<class IT>
+		void insert(const Iterator, IT, IT);
+
+		void insert(const Iterator, std::initializer_list<T>);
+
 	private:
 		T* m_data;
 		size_t m_size;
@@ -119,7 +136,7 @@ namespace Containers {
 
 		void fill_n(size_t, size_t, const T&);
 
-		void resize(size_t);
+		void reserve(size_t);
 
 		template<class IT>
 		void fill_range(size_t, IT, IT);
@@ -135,7 +152,7 @@ namespace Containers {
 	template<typename T>
 	void Vector<T>::push_back(const T& value) {
 		if (m_size == m_capacity) {
-			resize(m_capacity * Global::VECTOR_RESIZE_FACTOR);
+			reserve(m_capacity * Global::VECTOR_RESIZE_FACTOR);
 		}
 		m_data[m_size] = value;
 		++m_size;
@@ -143,31 +160,40 @@ namespace Containers {
 
 	template<typename T>
 	void Vector<T>::push_back(T&& value) {
+		emplace_back(std::move(value));
+	}
+
+	template<typename T>
+	template<typename...Args>
+	void Vector<T>::emplace_back(Args&&... args) {
 		if (m_size == m_capacity) {
-			resize(m_capacity * Global::VECTOR_RESIZE_FACTOR);
+			reserve(m_capacity * Global::VECTOR_RESIZE_FACTOR);
 		}
-		m_data[m_size] = value;
+		m_data[m_size] = T(std::forward<Args>(args)...);
 		++m_size;
 	}
 
 	template<typename T>
 	void Vector<T>::pop_back() {
-		--m_size;
+		if (m_size > 0) --m_size;
+		else throw OutOfRangeException("Vector");
 	}
 
 	template<typename T>
 	T& Vector<T>::operator[](size_t pos) {
+		if (pos >= m_size) throw OutOfRangeException("Vector");
 		return m_data[pos];
 	}
 
 	template<typename T>
 	const T& Vector<T>::operator[](size_t pos) const {
+		if (pos >= m_size) throw OutOfRangeException("Vector");
 		return m_data[pos];
 	}
 
 	template<typename T>
 	typename Vector<T>::Iterator Vector<T>::begin() const {
-		return Vector<T>::Iterator(m_data);
+		return Iterator(m_data);
 	}
 
 	template<typename T>
@@ -184,17 +210,39 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::insert(Iterator pos, const T& value) {
-		insert(pos, 1, value);
+	template<typename...Args>
+	typename Vector<T>::Iterator Vector<T>::emplace(const Iterator pos, Args&&...args) {
+		if (m_size + 1 > m_capacity) {
+			reserve(m_size + 1);
+		}
+		size_t start = pos - begin();
+		if (start >= m_size) throw InvalidIteratorException("Vector");
+		for (size_t i = m_size; i > start; --i) {
+			m_data[i] = m_data[i - 1];
+		}
+		*pos = T(std::forward<Args>(args)...);
+		++m_size;
 		return pos;
 	}
 
 	template<typename T>
-	void Vector<T>::insert(Iterator pos, size_t n, const T& value) {
+	typename Vector<T>::Iterator Vector<T>::insert(const Iterator pos, const T& value) {
+		insert(pos, (size_t) 1, value);
+		return pos;
+	}
+
+	template<typename T>
+	typename Vector<T>::Iterator Vector<T>::insert(const Iterator pos, T&& value) {
+		return emplace(pos, std::move(value));
+	}
+
+	template<typename T>
+	void Vector<T>::insert(const Iterator pos, size_t n, const T& value) {
 		if (m_size + n > m_capacity) {
-			resize(m_size + n);
+			reserve(m_size + n);
 		}
 		size_t start = pos - begin();
+		if (start >= m_size) throw InvalidIteratorException("Vector");
 		for (size_t i = m_size; i > start; --i) {
 			//std::cout << i + n << std::endl;
 			m_data[i + n - 1] = m_data[i - 1];
@@ -203,19 +251,27 @@ namespace Containers {
 		m_size += n;
 	}
 
-	//template<typename T> template<class IT>
-	//void Vector<T>::insert(Iterator pos, IT first, IT last) {
-	//	size_t n = last - first;
-	//	if (m_size + n > m_capacity) {
-	//		resize(m_size + n);
-	//	}
-	//	size_t start = pos - begin();
-	//	for (size_t i = m_size - 1; i >= start; --i) {
-	//		m_data[i + n] = m_data[i];
-	//	}
-	//	fill_range(start, first, last);
-	//	m_size += n;
-	//}
+	template<typename T> 
+	template<class IT>
+	void Vector<T>::insert(const Iterator pos, IT first, IT last) {
+		size_t n = last - first;
+		if (m_size + n > m_capacity) {
+			reserve(m_size + n);
+		}
+		size_t start = pos - begin();
+		if (start >= m_size) throw InvalidIteratorException("Vector");
+		for (size_t i = m_size - 1; i >= start; --i) {
+			m_data[i + n] = m_data[i];
+		}
+		fill_range(start, first, last);
+		m_size += n;
+	}
+
+	template<typename T>
+	void Vector<T>::insert(const Iterator pos, std::initializer_list<T> il) {
+		insert(pos, il.begin(), il.end());
+	}
+
 
 	template<typename T>
 	bool Vector<T>::Iterator::operator==(const Iterator& other) {
@@ -295,6 +351,16 @@ namespace Containers {
 	}
 
 	template<typename T>
+	T& Vector<T>::Iterator::operator*() const {
+		return *m_pointer;
+	}
+
+	template<typename T>
+	T* Vector<T>::Iterator::operator->() const {
+		return m_pointer;
+	}
+
+	template<typename T>
 	void Vector<T>::allocate(size_t size) {
 		m_data = new T[size];
 	}
@@ -306,7 +372,7 @@ namespace Containers {
 	}
 
 	template<typename T>
-	void Vector<T>::resize(size_t capacity) {
+	void Vector<T>::reserve(size_t capacity) {
 		T* new_data = new T[capacity];
 		size_t copy_capacity = capacity < m_capacity ?
 			capacity : m_capacity;
