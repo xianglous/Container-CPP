@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "vector.h"
+#include "linked_list.h"
 
 using namespace Containers;
 
@@ -16,10 +17,10 @@ void printVector(const V<T>& vec) {
     }
 }
 
-template<typename T>
-void printIterate(const Vector<T>& vec) {
-    std::cout << "Vector of size " << vec.size() << std::endl;
-    for (const T & val : vec) {
+template<typename T, template<typename...T> class V>
+void printIterate(const V<T>& iter) {
+    std::cout << "Iterable of size " << iter.size() << std::endl;
+    for (const T & val : iter) {
         std::cout << val << std::endl;
     }
 }
@@ -27,18 +28,11 @@ void printIterate(const Vector<T>& vec) {
 int main()
 {
     Vector<std::string> vec = { "1", "2", "3" };
-    std::vector<std::string> strs = { "4", "5", "6" };
-    for (const std::string& str : strs)
-        vec.push_back(str);
-    printVector(vec);
-    for (const std::string& str : strs)
-        vec.emplace_back(1, str[0]);
-    printVector(vec);
-    for (const std::string& str : strs)
-        vec.emplace(vec.begin(), 1, str[0]);
-    printVector(vec);
-    while (true)
-        vec.pop_back();
+    LinkedList<int> list{ 1, 2, 3 };
+    for (int i = 0; i < 4; ++i) {
+        list.insert(list.begin() + i, i);
+    }
+    printIterate(list);
     return 0;
 }
 

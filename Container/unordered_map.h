@@ -2,6 +2,8 @@
 #include <functional>
 #include <utility>
 #include <initializer_list>
+#include "globals.h"
+
 
 namespace Containers {
 	template<
@@ -12,7 +14,9 @@ namespace Containers {
 		public:
 			typedef typename std::pair<const K, V> value_type;
 
-			UnorderedMap();
+			UnorderedMap() : 
+				m_size(0), m_bucket_count(UNORDERED_MAP_INIT_SIZE), 
+				m_max_load_factor(UNORDERED_MAP_INIT_LOAD_FACTOR) {}
 
 			UnorderedMap(std::initializer_list<value_type>);
 
@@ -28,6 +32,9 @@ namespace Containers {
 			size_t size() const;
 
 			V& operator[](const K&);
+
+			const V& operator[](const K&) const;
+
 
 		class Iterator {
 		public:
@@ -85,8 +92,11 @@ namespace Containers {
 		void insert(std::initializer_list<value_type>);
 
 	private:
-		value_type* m_data;
+		value_type* m_buckets;
 		size_t m_size;
-		size_t m_capacity;
+		size_t m_bucket_count;
+		double m_max_load_factor;
 	};
+
+
 }

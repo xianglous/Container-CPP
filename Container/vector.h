@@ -203,7 +203,7 @@ namespace Containers {
 
 	template<typename T>
 	typename Vector<T>::Iterator Vector<T>::find(const T& value) const {
-		for (Vector<T>::Iterator it = begin(); it != end(); ++it) {
+		for (Iterator it = begin(); it != end(); ++it) {
 			if (*it == value) return it;
 		}
 		return end();
