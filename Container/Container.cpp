@@ -41,6 +41,16 @@ int main()
     //std::vector<int> test_vec{ 1, 2, 3 };
     vec.insert(vec.end(), vec.begin(), vec.end());
     printIterate(vec);
+    vec.resize(3);
+    printIterate(vec);
+    vec.shrink_to_fit();
+    printIterate(vec);
+    vec.resize(6);
+    printIterate(vec);
+    vec.resize(9, 5);
+    printIterate(vec);
+    vec.resize(6, 5);
+    printIterate(vec);
     return 0;
 }
 

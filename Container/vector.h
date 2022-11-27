@@ -54,6 +54,16 @@ namespace Containers {
 
 		bool empty() const;
 
+		void reserve(size_t);
+
+		void resize(size_t);
+
+		void resize(size_t, const T&);
+
+		void shrink_to_fit();
+
+		void swap(Vector& other) noexcept;
+
 		void push_back(const T&);
 
 		void push_back(T&&);
@@ -153,8 +163,6 @@ namespace Containers {
 		void allocate(size_t);
 
 		void fill_n(size_t, size_t, const T&);
-
-		void reserve(size_t);
 
 		template<class IT>
 		void fill_range(size_t, IT, IT);
@@ -447,16 +455,42 @@ namespace Containers {
 
 	template<typename T>
 	void Vector<T>::reserve(size_t capacity) {
+		if (capacity <= m_capacity) return;
 		T* new_data = new T[capacity];
-		size_t copy_capacity = capacity < m_capacity ?
-			capacity : m_capacity;
-		for (size_t i = 0; i < copy_capacity; ++i) {
+		for (size_t i = 0; i < m_capacity; ++i) {
 			new_data[i] = m_data[i];
 		}
 		if (m_data) delete[] m_data;
 		m_data = new_data;
 		m_capacity = capacity;
 	}
+
+	template<typename T>
+	void Vector<T>::resize(size_t size) {
+		resize(size, T());
+	}
+
+	template<typename T>
+	void Vector<T>::resize(size_t size, const T& value) {
+		if (size < m_size)
+			erase(begin() + size, end());
+		else if (size > m_size)
+			insert(end(), size - m_size, value);
+	}
+
+	template<typename T>
+	void Vector<T>::shrink_to_fit() {
+		T* new_data = new T[m_size];
+		for (size_t i = 0; i < m_size; ++i) {
+			new_data[i] = m_data[i];
+		}
+		if (m_data) delete[] m_data;
+		m_data = new_data;
+		m_capacity = m_size;
+	}
+
+	template<typename T>
+	void Vector<T>::swap(Vector& other) noexcept;
 
 	template<typename T> template<class IT>
 	void Vector<T>::fill_range(size_t start, IT begin, IT end) {
