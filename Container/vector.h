@@ -67,21 +67,31 @@ namespace Containers {
 
 		const T& operator[](size_t) const;
 
+		T& front();
+
+		const T& front() const;
+
+		T& back();
+
+		const T& back() const;
+
 		class Iterator {
 		public:
 			Iterator() : m_pointer(nullptr) {}
+
 			Iterator(T* pointer) : m_pointer(pointer) {}
+
 			Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
 
-			bool operator==(const Iterator&);
+			bool operator==(const Iterator&) const;
 
-			bool operator!=(const Iterator&);
+			bool operator!=(const Iterator&) const;
 
 			Iterator& operator++();
 
 			Iterator operator++(int);
 
-			Iterator operator+(int);
+			Iterator operator+(int) const;
 
 			Iterator& operator+=(int);
 
@@ -89,7 +99,7 @@ namespace Containers {
 
 			Iterator operator--(int);
 
-			Iterator operator-(int);
+			Iterator operator-(int) const;
 
 			Iterator& operator-=(int);
 
@@ -97,19 +107,23 @@ namespace Containers {
 
 			T& operator*();
 
+			const T& operator*() const;
+
 			T* operator->();
 
-			T& operator*() const;
-
-			T* operator->() const;
+			const T* operator->() const;
 
 		private:
 			T* m_pointer;
 		};
 
-		Iterator begin() const;
+		Iterator begin();
 
-		Iterator end() const;
+		const Iterator begin() const;
+
+		Iterator end();
+
+		const Iterator end() const;
 
 		Iterator find(const T&) const;
 
@@ -126,6 +140,10 @@ namespace Containers {
 		void insert(const Iterator, IT, IT);
 
 		void insert(const Iterator, std::initializer_list<T>);
+
+		Iterator erase(const Iterator);
+
+		Iterator erase(const Iterator, const Iterator);
 
 	private:
 		T* m_data;
@@ -192,12 +210,46 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::begin() const {
+	T& Vector<T>::front() {
+		if (!m_size) throw OutOfRangeException("Vector");
+		return m_data[0];
+	}
+
+	template<typename T>
+	const T& Vector<T>::front() const {
+		if (!m_size) throw OutOfRangeException("Vector");
+		return m_data[0];
+	}
+
+	template<typename T>
+	T& Vector<T>::back() {
+		if (!m_size) throw OutOfRangeException("Vector");
+		return m_data[m_size - 1];
+	}
+
+	template<typename T>
+	const T& Vector<T>::back() const {
+		if (!m_size) throw OutOfRangeException("Vector");
+		return m_data[m_size - 1];
+	}
+
+	template<typename T>
+	typename Vector<T>::Iterator Vector<T>::begin() {
 		return Iterator(m_data);
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::end() const {
+	const typename Vector<T>::Iterator Vector<T>::begin() const {
+		return Iterator(m_data);
+	}
+
+	template<typename T>
+	typename Vector<T>::Iterator Vector<T>::end() {
+		return Iterator(m_data + m_size);
+	}
+
+	template<typename T>
+	const typename Vector<T>::Iterator Vector<T>::end() const {
 		return Iterator(m_data + m_size);
 	}
 
@@ -212,7 +264,7 @@ namespace Containers {
 	template<typename T>
 	template<typename...Args>
 	typename Vector<T>::Iterator Vector<T>::emplace(const Iterator pos, Args&&...args) {
-		if (m_size + 1 > m_capacity) {
+		if (m_size == m_capacity) {
 			reserve(m_size + 1);
 		}
 		size_t start = pos - begin();
@@ -238,13 +290,12 @@ namespace Containers {
 
 	template<typename T>
 	void Vector<T>::insert(const Iterator pos, size_t n, const T& value) {
+		size_t start = pos - begin();
 		if (m_size + n > m_capacity) {
 			reserve(m_size + n);
 		}
-		size_t start = pos - begin();
-		if (start >= m_size) throw InvalidIteratorException("Vector");
+		if (start > m_size) throw InvalidIteratorException("Vector");
 		for (size_t i = m_size; i > start; --i) {
-			//std::cout << i + n << std::endl;
 			m_data[i + n - 1] = m_data[i - 1];
 		}
 		fill_n(start, n, value);
@@ -255,11 +306,11 @@ namespace Containers {
 	template<class IT>
 	void Vector<T>::insert(const Iterator pos, IT first, IT last) {
 		size_t n = last - first;
+		size_t start = pos - begin();
 		if (m_size + n > m_capacity) {
 			reserve(m_size + n);
 		}
-		size_t start = pos - begin();
-		if (start >= m_size) throw InvalidIteratorException("Vector");
+		if (start > m_size) throw InvalidIteratorException("Vector");
 		for (size_t i = m_size - 1; i >= start; --i) {
 			m_data[i + n] = m_data[i];
 		}
@@ -272,14 +323,30 @@ namespace Containers {
 		insert(pos, il.begin(), il.end());
 	}
 
+	template<typename T>
+	typename Vector<T>::Iterator Vector<T>::erase(const Iterator pos) {
+		return erase(pos, pos + 1);
+	}
 
 	template<typename T>
-	bool Vector<T>::Iterator::operator==(const Iterator& other) {
+	typename Vector<T>::Iterator Vector<T>::erase(const Iterator first, const Iterator last) {
+		if (first == last) return last;
+		size_t start = first - begin(), end = last - begin();
+		if (start > m_size || end > m_size) throw InvalidIteratorException("Vector");
+		for (size_t i = end; i < m_size; ++i) {
+			m_data[i - end + start] = m_data[i];
+		}
+		m_size -= end - start;
+		return Iterator(m_data + start);
+	}
+
+	template<typename T>
+	bool Vector<T>::Iterator::operator==(const Iterator& other) const {
 		return m_pointer == other.m_pointer;
 	}
 
 	template<typename T>
-	bool Vector<T>::Iterator::operator!=(const Iterator& other) {
+	bool Vector<T>::Iterator::operator!=(const Iterator& other) const {
 		return m_pointer != other.m_pointer;
 	}
 
@@ -297,9 +364,9 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator+(int steps) {
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator+(int steps) const {
 		Iterator it = *this;
-		m_pointer += steps;
+		it.m_pointer += steps;
 		return it;
 	}
 
@@ -323,9 +390,9 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::Iterator::operator-(int steps) {
+	typename Vector<T>::Iterator Vector<T>::Iterator::operator-(int steps) const {
 		Iterator it = *this;
-		m_pointer -= steps;
+		it.m_pointer -= steps;
 		return it;
 	}
 
@@ -336,7 +403,7 @@ namespace Containers {
 	}
 
 	template<typename T>
-	size_t Vector<T>::Iterator::operator-(const Vector<T>::Iterator& other) const {
+	size_t Vector<T>::Iterator::operator-(const Iterator& other) const {
 		return m_pointer - other.m_pointer;
 	}
 
@@ -346,17 +413,17 @@ namespace Containers {
 	}
 
 	template<typename T>
+	const T& Vector<T>::Iterator::operator*() const {
+		return *m_pointer;
+	}
+
+	template<typename T>
 	T* Vector<T>::Iterator::operator->() {
 		return m_pointer;
 	}
 
 	template<typename T>
-	T& Vector<T>::Iterator::operator*() const {
-		return *m_pointer;
-	}
-
-	template<typename T>
-	T* Vector<T>::Iterator::operator->() const {
+	const T* Vector<T>::Iterator::operator->() const {
 		return m_pointer;
 	}
 

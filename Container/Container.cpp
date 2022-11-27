@@ -27,12 +27,18 @@ void printIterate(const V<T>& iter) {
 
 int main()
 {
-    Vector<std::string> vec = { "1", "2", "3" };
+    Vector<int> vec = { 4, 5, 6 };
     LinkedList<int> list{ 1, 2, 3 };
-    for (int i = 0; i < 4; ++i) {
-        list.insert(list.begin() + i, i);
-    }
+    //for (int i = 0; i < 4; ++i) {
+    //    list.insert(list.begin() + i, i);
+    //}
+    list.insert(list.end(), vec.begin(), vec.end());
     printIterate(list);
+    vec.insert(vec.end(), list.begin(), list.end());
+    printIterate(vec);
+    auto it = vec.erase(vec.begin(), vec.end());
+    printIterate(vec);
+    std::cout << std::boolalpha << (it == vec.end()) << std::endl;
     return 0;
 }
 

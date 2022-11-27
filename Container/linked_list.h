@@ -11,26 +11,31 @@ namespace Containers {
 	class LinkedList {
 	public:
 		LinkedList() :
-			m_head(nullptr), m_tail(nullptr), m_size(0) {}
+			m_head(nullptr), m_tail(new ListNode()), m_size(0) {}
 
-		LinkedList(size_t size, const T& init_val) {
+		LinkedList(size_t size, const T& init_val) :
+			LinkedList() {
 			insert_n(nullptr, size, init_val);
 		}
 
-		LinkedList(std::initializer_list<T> il) {
+		LinkedList(std::initializer_list<T> il) :
+			LinkedList() {
 			insert_range(nullptr, il.begin(), il.end());
 		}
 
-		LinkedList(const LinkedList& other) {
+		LinkedList(const LinkedList& other) :
+			LinkedList() {
 			insert_range(0, other.begin(), other.end());
 		}
 
-		LinkedList(LinkedList&& other) {
+		LinkedList(LinkedList&& other) :
+			LinkedList() {
 			insert_range(0, other.begin(), other.end());
 		}
 
 		~LinkedList() {
 			while (size()) pop_back();
+			delete m_tail;
 		}
 
 		size_t size() const;
@@ -56,28 +61,30 @@ namespace Containers {
 		void pop_front();
 
 		T& front();
-
-		T& back();
 		
 		const T& front() const;
+
+		T& back();
 
 		const T& back() const;
 
 		class Iterator {
 		public:
 			Iterator() : m_pointer(nullptr) {}
+
 			Iterator(struct ListNode* pointer) : m_pointer(pointer) {}
+
 			Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
 
-			bool operator==(const Iterator&);
+			bool operator==(const Iterator&) const;
 
-			bool operator!=(const Iterator&);
+			bool operator!=(const Iterator&) const;
 
 			Iterator& operator++();
 
 			Iterator operator++(int);
 
-			Iterator operator+(int);
+			Iterator operator+(int) const;
 
 			Iterator& operator+=(int);
 
@@ -85,7 +92,7 @@ namespace Containers {
 
 			Iterator operator--(int);
 
-			Iterator operator-(int);
+			Iterator operator-(int) const;
 
 			Iterator& operator-=(int);
 
@@ -93,20 +100,24 @@ namespace Containers {
 
 			T& operator*();
 
+			const T& operator*() const;
+
 			T* operator->();
 
-			T& operator*() const;
-
-			T* operator->() const;
+			const T* operator->() const;
 
 		private:
 			struct ListNode* m_pointer;
 			friend class LinkedList;
 		};
 
-		Iterator begin() const;
+		Iterator begin();
 
-		Iterator end() const;
+		const Iterator begin() const;
+
+		Iterator end();
+
+		const Iterator end() const;
 
 		Iterator find(const T&) const;
 
@@ -173,8 +184,7 @@ namespace Containers {
 		new_node->next = next;
 		if (prev) prev->next = new_node;
 		else m_head = new_node;
-		if (next) next->prev = new_node;
-		else m_tail = new_node;
+		next->prev = new_node;
 		++m_size;
 	}
 
@@ -187,13 +197,13 @@ namespace Containers {
 	template<typename T>
 	void LinkedList<T>::push_back(const T& value) {
 		ListNode* new_node = new ListNode(value);
-		insert_between(new_node, m_tail, nullptr);
+		insert_between(new_node, m_tail->prev, m_tail);
 	}
 
 	template<typename T>
 	void LinkedList<T>::push_back(T&& value) {
 		ListNode* new_node = new ListNode(std::move(value));
-		insert_between(new_node, m_tail, nullptr);
+		insert_between(new_node, m_tail->prev, m_tail);
 	}
 
 	template<typename T>
@@ -212,7 +222,7 @@ namespace Containers {
 	template<typename...Args>
 	void LinkedList<T>::emplace_back(Args&&...args) {
 		ListNode* new_node = new ListNode(T(std::forward<Args>(args)...));
-		insert_between(new_node, m_tail, nullptr);
+		insert_between(new_node, m_tail->prev, m_tail);
 	}
 
 	template<typename T>
@@ -229,21 +239,21 @@ namespace Containers {
 	}
 
 	template<typename T>
-	T& LinkedList<T>::back() {
-		if (!m_tail) throw OutOfRangeException("LinkedList");
-		return m_tail->value;
-	}
-
-	template<typename T>
 	const T& LinkedList<T>::front() const {
 		if (!m_head) throw OutOfRangeException("LinkedList");
 		return m_head->value;
 	}
 
 	template<typename T>
+	T& LinkedList<T>::back() {
+		if (!m_tail->prev) throw OutOfRangeException("LinkedList");
+		return m_tail->prev->value;
+	}
+
+	template<typename T>
 	const T& LinkedList<T>::back() const {
-		if (!m_tail) throw OutOfRangeException("LinkedList");
-		return m_tail->value;
+		if (!m_tail->prev) throw OutOfRangeException("LinkedList");
+		return m_tail->prev->value;
 	}
 
 	template<typename T>
@@ -253,17 +263,14 @@ namespace Containers {
 			node->prev->next = node->next;
 		else 
 			m_head = node->next;
-		if (node->next)
-			node->next->prev = node->prev;
-		else 
-			m_tail = node->prev;
+		node->next->prev = node->prev;
 		delete node;
 		--m_size;
 	}
 
 	template<typename T>
 	void LinkedList<T>::pop_back() {
-		erase(m_tail);
+		erase(m_tail->prev);
 	}
 
 	template<typename T>
@@ -272,18 +279,18 @@ namespace Containers {
 	}
 
 	template<typename T>
-	bool LinkedList<T>::Iterator::operator==(const Iterator& other) {
+	bool LinkedList<T>::Iterator::operator==(const Iterator& other) const {
 		return m_pointer == other.m_pointer;
 	}
 
 	template<typename T>
-	bool LinkedList<T>::Iterator::operator!=(const Iterator& other) {
+	bool LinkedList<T>::Iterator::operator!=(const Iterator& other) const {
 		return m_pointer != other.m_pointer;
 	}
 
 	template<typename T>
 	typename LinkedList<T>::Iterator& LinkedList<T>::Iterator::operator++() {
-		if (!m_pointer) throw OutOfRangeException("LinkedList");
+		if (!m_pointer->next) throw OutOfRangeException("LinkedList");
 		m_pointer = m_pointer->next;
 		return *this;
 	}
@@ -296,7 +303,7 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::Iterator::operator+(int steps) {
+	typename LinkedList<T>::Iterator LinkedList<T>::Iterator::operator+(int steps) const {
 		Iterator it = *this;
 		for (int i = 0; i < steps; ++i, ++it);
 		return it;
@@ -310,7 +317,7 @@ namespace Containers {
 
 	template<typename T>
 	typename LinkedList<T>::Iterator& LinkedList<T>::Iterator::operator--() {
-		if (!m_pointer) throw OutOfRangeException("LinkedList");
+		if (!m_pointer->prev) throw OutOfRangeException("LinkedList");
 		m_pointer = m_pointer->prev;
 		return *this;
 	}
@@ -323,7 +330,7 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::Iterator::operator-(int steps) {
+	typename LinkedList<T>::Iterator LinkedList<T>::Iterator::operator-(int steps) const {
 		Iterator it = *this;
 		for (int i = 0; i < steps; ++i, --it);
 		return it;
@@ -338,8 +345,8 @@ namespace Containers {
 	template<typename T>
 	size_t LinkedList<T>::Iterator::operator-(const Iterator& other) const {
 		size_t dis = 0;
-		for (Iterator it = other; other; ++other, ++dis) {
-			if (*this == other) return dis;
+		for (Iterator it = other; it.m_pointer; ++it, ++dis) {
+			if (m_pointer == it.m_pointer) return dis;
 		}
 		throw InvalidIteratorException("LinkedList");
 	}
@@ -350,28 +357,38 @@ namespace Containers {
 	}
 
 	template<typename T>
+	const T& LinkedList<T>::Iterator::operator*() const {
+		return m_pointer->value;
+	}
+
+	template<typename T>
 	T* LinkedList<T>::Iterator::operator->() {
 		return &(m_pointer->value);
 	}
 
 	template<typename T>
-	T& LinkedList<T>::Iterator::operator*() const {
-		return m_pointer->value;
-	}
-
-	template<typename T>
-	T* LinkedList<T>::Iterator::operator->() const {
+	const T* LinkedList<T>::Iterator::operator->() const {
 		return &(m_pointer->value);
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::begin() const {
+	typename LinkedList<T>::Iterator LinkedList<T>::begin() {
 		return Iterator(m_head);
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::end() const {
-		return Iterator(nullptr);
+	const typename LinkedList<T>::Iterator LinkedList<T>::begin() const {
+		return Iterator(m_head);
+	}
+
+	template<typename T>
+	typename LinkedList<T>::Iterator LinkedList<T>::end() {
+		return Iterator(m_tail);
+	}
+
+	template<typename T>
+	const typename LinkedList<T>::Iterator LinkedList<T>::end() const {
+		return Iterator(m_tail);
 	}
 
 	template<typename T>
@@ -386,15 +403,14 @@ namespace Containers {
 	template<typename...Args>
 	typename LinkedList<T>::Iterator LinkedList<T>::emplace(const Iterator pos, Args&&...args) {
 		ListNode* new_node = new ListNode(std::forward<Args>(args)...);
-		ListNode* prev = pos.m_pointer ? pos.m_pointer->prev : nullptr;
-		insert_between(new_node, prev, pos.m_pointer);
+		insert_between(new_node, pos.m_pointer->prev, pos.m_pointer);
 		return Iterator(new_node);
 	}
 
 	template<typename T>
 	typename LinkedList<T>::Iterator LinkedList<T>::insert(const Iterator pos, const T& value) {
 		insert(pos, (size_t) 1, value);
-		return pos;
+		return pos - 1;
 	}
 
 	template<typename T>
@@ -407,17 +423,16 @@ namespace Containers {
 		ListNode* ptr = pos.m_pointer;
 		for (size_t i = 0; i < n; ++i) {
 			ListNode* new_node = new ListNode(value);
-			ListNode* prev = ptr ? ptr->prev : nullptr;
-			insert_between(new_node, prev, ptr);
-			ptr = new_node;
+			insert_between(new_node, pos.m_pointer->prev, pos.m_pointer);
 		}
 	}
 
 	template<typename T>
 	template<class IT>
 	void LinkedList<T>::insert(const Iterator pos, IT first, IT last) {
+		Iterator cur = pos;
 		for (IT it = first; it != last; ++it) {
-			pos = ++insert(pos, *it);
+			cur = ++insert(cur, *it);
 		}
 	}
 
