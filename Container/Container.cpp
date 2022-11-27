@@ -32,13 +32,15 @@ int main()
     //for (int i = 0; i < 4; ++i) {
     //    list.insert(list.begin() + i, i);
     //}
-    list.insert(list.end(), vec.begin(), vec.end());
-    printIterate(list);
-    vec.insert(vec.end(), list.begin(), list.end());
+    //list.insert(list.end(), vec.begin(), vec.end());
+    //printIterate(list);
+    //vec.insert(vec.end(), list.begin(), list.end());
+    //printIterate(vec);
+    //auto it = vec.erase(vec.begin(), vec.end());
+    //printIterate(vec);
+    //std::vector<int> test_vec{ 1, 2, 3 };
+    vec.insert(vec.end(), vec.begin(), vec.end());
     printIterate(vec);
-    auto it = vec.erase(vec.begin(), vec.end());
-    printIterate(vec);
-    std::cout << std::boolalpha << (it == vec.end()) << std::endl;
     return 0;
 }
 

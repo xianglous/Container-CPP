@@ -307,14 +307,21 @@ namespace Containers {
 	void Vector<T>::insert(const Iterator pos, IT first, IT last) {
 		size_t n = last - first;
 		size_t start = pos - begin();
+		size_t fi = &(*first) - m_data, la = &(*last) - m_data;
 		if (m_size + n > m_capacity) {
 			reserve(m_size + n);
 		}
 		if (start > m_size) throw InvalidIteratorException("Vector");
-		for (size_t i = m_size - 1; i >= start; --i) {
-			m_data[i + n] = m_data[i];
+		for (size_t i = m_size; i > start; --i) {
+			m_data[i + n - 1] = m_data[i - 1];
 		}
-		fill_range(start, first, last);
+		if (typeid(IT) == typeid(Iterator) && fi <= m_size && la <= m_size) {
+			for (size_t i = fi; i < la; ++i) {
+				m_data[start + i - fi] = m_data[i < start ? i : i + n];
+			}
+		}
+		else
+			fill_range(start, first, last);
 		m_size += n;
 	}
 
