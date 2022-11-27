@@ -1,6 +1,8 @@
 #pragma once
+#include <algorithm>
 #include <initializer_list>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 #include "globals.h"
 #include "exception.h"
@@ -10,49 +12,36 @@ namespace Containers {
 	template<typename T>
 	class Vector {
 	public:
-		Vector() :
-			m_data(nullptr), m_size(0), m_capacity(Global::VECTOR_INIT_SIZE) {
-			allocate(Global::VECTOR_INIT_SIZE);
-		}
+		Vector() noexcept;
 
-		Vector(size_t size) :
-			m_size(size), m_capacity(size) {
-			allocate(size);
-		}
+		explicit Vector(size_t);
 
-		Vector(size_t size, const T& init_val) :
-			m_size(size), m_capacity(size) {
-			allocate(size);
-			fill_n(0, size, init_val);
-		}
+		Vector(size_t, const T&);
 
-		Vector(std::initializer_list<T> il) :
-			m_size(il.size()), m_capacity(il.size()) {
-			allocate(il.size());
-			fill_range(0, il.begin(), il.end());
-		}
+		template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
+		Vector(IT, IT);
 
-		Vector(const Vector& other) :
-			m_size(other.m_size), m_capacity(other.m_capacity) {
-			allocate(other.m_size);
-			fill_range(0, other.begin(), other.end());
-		}
+		Vector(const Vector&);
 
-		Vector(Vector&& other) :
-			m_size(other.m_size), m_capacity(other.m_capacity) {
-			allocate(other.m_size);
-			fill_range(0, other.begin(), other.end());
-		}
+		Vector(Vector&&) noexcept;
 
-		~Vector() {
-			if (m_data) delete[] m_data;
-			m_capacity = 0;
-			m_size = 0;
-		}
+		Vector(std::initializer_list<T>);
+
+		~Vector();
+
+		Vector& operator=(const Vector&);
+
+		Vector& operator=(Vector&&) noexcept;
+
+		Vector& operator=(std::initializer_list<T>);
 
 		size_t size() const;
 
 		bool empty() const;
+
+		T* data() noexcept;
+
+		const T* data() const noexcept;
 
 		void reserve(size_t);
 
@@ -73,6 +62,10 @@ namespace Containers {
 
 		void pop_back();
 
+		T& at(size_t);
+
+		const T& at(size_t) const;
+
 		T& operator[](size_t);
 
 		const T& operator[](size_t) const;
@@ -84,6 +77,8 @@ namespace Containers {
 		T& back();
 
 		const T& back() const;
+
+		void clear() noexcept;
 
 		class Iterator {
 		public:
@@ -146,7 +141,7 @@ namespace Containers {
 
 		void insert(const Iterator, size_t, const T&);
 
-		template<class IT>
+		template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
 		void insert(const Iterator, IT, IT);
 
 		void insert(const Iterator, std::initializer_list<T>);
@@ -161,19 +156,135 @@ namespace Containers {
 		size_t m_capacity;
 
 		void allocate(size_t);
-
-		void fill_n(size_t, size_t, const T&);
-
-		template<class IT>
-		void fill_range(size_t, IT, IT);
 	};
 
+	template<typename T>
+	Vector<T>::Vector() noexcept :
+		m_data(nullptr), m_size(0), m_capacity(Global::VECTOR_INIT_SIZE) {
+		allocate(Global::VECTOR_INIT_SIZE);
+	}
+
+	template<typename T>
+	Vector<T>::Vector(size_t size) :
+		m_size(size), m_capacity(size) {
+		allocate(size);
+	}
+
+	template<typename T>
+	Vector<T>::Vector(size_t size, const T& init_val) :
+		m_size(size), m_capacity(size) {
+		allocate(size);
+		std::fill_n(m_data, size, init_val);
+	}
+
+	template<typename T>
+	template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
+	Vector<T>::Vector(IT first, IT last) :
+		m_size(last - first), m_capacity(last - first) {
+		allocate(last - first);
+		std::copy(first, last, m_data);
+	}
+
+	template<typename T>
+	Vector<T>::Vector(const Vector& other) :
+		Vector(other.begin(), other.end()) {}
+
+	template<typename T>
+	Vector<T>::Vector(Vector&& other) noexcept :
+		m_size(std::move(other.m_size)), m_capacity(std::move(other.m_capacity)), m_data(std::move(other.m_data)) {}
+
+	template<typename T>
+	Vector<T>::Vector(std::initializer_list<T> il) :
+		Vector(il.begin(), il.end()) {}
+
+	template<typename T>
+	Vector<T>::~Vector() {
+		delete[] m_data;
+		m_capacity = 0;
+		m_size = 0;
+	}
+
+	template<typename T>
+	Vector<T>& Vector<T>::operator=(const Vector& other) {
+		Vector<T> temp(other);
+		temp.swap(*this);
+		return *this;
+	}
+
+	template<typename T>
+	Vector<T>& Vector<T>::operator=(Vector&& other) noexcept {
+		other.swap(*this);
+		return *this;
+	}
+
+	template<typename T>
+	Vector<T>& Vector<T>::operator=(std::initializer_list<T> il) {
+		Vector<T> temp(il);
+		temp.swap(*this);
+		return *this;
+	}
+
+	template<typename T>
+	void Vector<T>::swap(Vector& other) noexcept {
+		std::swap(m_size, other.m_size);
+		std::swap(m_capacity, other.m_capacity);
+		std::swap(m_data, other.m_data);
+	}
 
 	template<typename T>
 	size_t Vector<T>::size() const { return m_size; }
 
 	template<typename T>
 	bool Vector<T>::empty() const { return m_size == 0; }
+
+	template<typename T>
+	T* Vector<T>::data() noexcept { return m_data; };
+
+	template<typename T>
+	const T* Vector<T>::data() const noexcept { return m_data; };
+
+	template<typename T>
+	void Vector<T>::reserve(size_t capacity) {
+		if (capacity <= m_capacity) return;
+		T* new_data = new T[capacity];
+
+		std::copy(m_data, m_data + m_capacity, new_data);
+
+		std::swap(m_capacity, capacity);
+		std::swap(m_data, new_data);
+
+		delete[] new_data;
+	}
+
+	template<typename T>
+	void Vector<T>::resize(size_t size) {
+		resize(size, T());
+	}
+
+	template<typename T>
+	void Vector<T>::resize(size_t size, const T& value) {
+		if (size < m_size)
+			erase(begin() + static_cast<int>(size), end());
+		else if (size > m_size)
+			insert(end(), size - m_size, value);
+	}
+
+	template<typename T>
+	void Vector<T>::shrink_to_fit() {
+		T* new_data = new T[m_size];
+
+		std::copy(m_data, m_data + m_size, new_data);
+
+		std::swap(m_data, new_data);
+		m_capacity = m_size;
+
+		delete[] new_data;
+	}
+
+	template<typename T>
+	void Vector<T>::clear() noexcept {
+		m_size = 0;
+	}
 
 	template<typename T>
 	void Vector<T>::push_back(const T& value) {
@@ -206,14 +317,24 @@ namespace Containers {
 	}
 
 	template<typename T>
-	T& Vector<T>::operator[](size_t pos) {
+	T& Vector<T>::at(size_t pos) {
 		if (pos >= m_size) throw OutOfRangeException("Vector");
 		return m_data[pos];
 	}
 
 	template<typename T>
-	const T& Vector<T>::operator[](size_t pos) const {
+	const T& Vector<T>::at(size_t pos) const {
 		if (pos >= m_size) throw OutOfRangeException("Vector");
+		return m_data[pos];
+	}
+	
+	template<typename T>
+	T& Vector<T>::operator[](size_t pos) {
+		return m_data[pos];
+	}
+
+	template<typename T>
+	const T& Vector<T>::operator[](size_t pos) const {
 		return m_data[pos];
 	}
 
@@ -303,15 +424,15 @@ namespace Containers {
 			reserve(m_size + n);
 		}
 		if (start > m_size) throw InvalidIteratorException("Vector");
-		for (size_t i = m_size; i > start; --i) {
-			m_data[i + n - 1] = m_data[i - 1];
-		}
-		fill_n(start, n, value);
+
+		std::copy_n(m_data + start, m_size - start, m_data + start + n);
+		std::fill_n(m_data + start, n, value);
+
 		m_size += n;
 	}
 
 	template<typename T> 
-	template<class IT>
+	template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
 	void Vector<T>::insert(const Iterator pos, IT first, IT last) {
 		size_t n = last - first;
 		size_t start = pos - begin();
@@ -320,16 +441,15 @@ namespace Containers {
 			reserve(m_size + n);
 		}
 		if (start > m_size) throw InvalidIteratorException("Vector");
-		for (size_t i = m_size; i > start; --i) {
-			m_data[i + n - 1] = m_data[i - 1];
-		}
+
+		std::copy_n(m_data + start, m_size - start, m_data + start + n);
 		if (typeid(IT) == typeid(Iterator) && fi <= m_size && la <= m_size) {
 			for (size_t i = fi; i < la; ++i) {
 				m_data[start + i - fi] = m_data[i < start ? i : i + n];
 			}
 		}
 		else
-			fill_range(start, first, last);
+			std::copy(first, last, m_data + start);
 		m_size += n;
 	}
 
@@ -447,56 +567,4 @@ namespace Containers {
 		m_data = new T[size];
 	}
 
-	template<typename T>
-	void Vector<T>::fill_n(size_t start, size_t size, const T& value) {
-		for (size_t i = 0; i < size; ++i)
-			m_data[i + start] = value;
-	}
-
-	template<typename T>
-	void Vector<T>::reserve(size_t capacity) {
-		if (capacity <= m_capacity) return;
-		T* new_data = new T[capacity];
-		for (size_t i = 0; i < m_capacity; ++i) {
-			new_data[i] = m_data[i];
-		}
-		if (m_data) delete[] m_data;
-		m_data = new_data;
-		m_capacity = capacity;
-	}
-
-	template<typename T>
-	void Vector<T>::resize(size_t size) {
-		resize(size, T());
-	}
-
-	template<typename T>
-	void Vector<T>::resize(size_t size, const T& value) {
-		if (size < m_size)
-			erase(begin() + size, end());
-		else if (size > m_size)
-			insert(end(), size - m_size, value);
-	}
-
-	template<typename T>
-	void Vector<T>::shrink_to_fit() {
-		T* new_data = new T[m_size];
-		for (size_t i = 0; i < m_size; ++i) {
-			new_data[i] = m_data[i];
-		}
-		if (m_data) delete[] m_data;
-		m_data = new_data;
-		m_capacity = m_size;
-	}
-
-	template<typename T>
-	void Vector<T>::swap(Vector& other) noexcept;
-
-	template<typename T> template<class IT>
-	void Vector<T>::fill_range(size_t start, IT begin, IT end) {
-		size_t i = 0;
-		for (IT it = begin; it != end; ++it, ++i) {
-			m_data[i + start] = *it;
-		}
-	}
 }
