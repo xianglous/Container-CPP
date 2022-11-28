@@ -57,9 +57,9 @@ namespace Containers {
 		const T* data() const noexcept;
 
 		// Capacity
-		bool empty() const;
+		bool empty() const noexcept;
 
-		size_t size() const;
+		size_t size() const noexcept;
 
 		void reserve(size_t);
 
@@ -68,55 +68,15 @@ namespace Containers {
 		void shrink_to_fit();
 
 		// Iterators
-		class Iterator {
-		public:
-			Iterator() : m_pointer(nullptr) {}
+		class Iterator;
 
-			Iterator(T* pointer) : m_pointer(pointer) {}
+		Iterator begin() noexcept;
 
-			Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
+		const Iterator begin() const noexcept;
 
-			bool operator==(const Iterator&) const;
+		Iterator end() noexcept;
 
-			bool operator!=(const Iterator&) const;
-
-			Iterator& operator++();
-
-			Iterator operator++(int);
-
-			Iterator operator+(int) const;
-
-			Iterator& operator+=(int);
-
-			Iterator& operator--();
-
-			Iterator operator--(int);
-
-			Iterator operator-(int) const;
-
-			Iterator& operator-=(int);
-
-			size_t operator-(const Iterator&) const;
-
-			T& operator*();
-
-			const T& operator*() const;
-
-			T* operator->();
-
-			const T* operator->() const;
-
-		private:
-			T* m_pointer;
-		};
-
-		Iterator begin();
-
-		const Iterator begin() const;
-
-		Iterator end();
-
-		const Iterator end() const;
+		const Iterator end() const noexcept;
 
 		Iterator find(const T&) const;
 
@@ -163,6 +123,50 @@ namespace Containers {
 
 		void allocate(size_t);
 	};
+
+	template<typename T>
+	class Vector<T>::Iterator {
+	public:
+		Iterator() : m_pointer(nullptr) {}
+
+		Iterator(T* pointer) : m_pointer(pointer) {}
+
+		Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
+
+		bool operator==(const Iterator&) const;
+
+		bool operator!=(const Iterator&) const;
+
+		Iterator& operator++();
+
+		Iterator operator++(int);
+
+		Iterator operator+(int) const;
+
+		Iterator& operator+=(int);
+
+		Iterator& operator--();
+
+		Iterator operator--(int);
+
+		Iterator operator-(int) const;
+
+		Iterator& operator-=(int);
+
+		size_t operator-(const Iterator&) const;
+
+		T& operator*();
+
+		const T& operator*() const;
+
+		T* operator->();
+
+		const T* operator->() const;
+
+	private:
+		T* m_pointer;
+	};
+
 
 	template<typename T>
 	Vector<T>::Vector() noexcept :
@@ -374,22 +378,22 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::begin() {
+	typename Vector<T>::Iterator Vector<T>::begin() noexcept {
 		return Iterator(m_data);
 	}
 
 	template<typename T>
-	const typename Vector<T>::Iterator Vector<T>::begin() const {
+	const typename Vector<T>::Iterator Vector<T>::begin() const noexcept {
 		return Iterator(m_data);
 	}
 
 	template<typename T>
-	typename Vector<T>::Iterator Vector<T>::end() {
+	typename Vector<T>::Iterator Vector<T>::end() noexcept {
 		return Iterator(m_data + m_size);
 	}
 
 	template<typename T>
-	const typename Vector<T>::Iterator Vector<T>::end() const {
+	const typename Vector<T>::Iterator Vector<T>::end() const noexcept {
 		return Iterator(m_data + m_size);
 	}
 
@@ -403,10 +407,10 @@ namespace Containers {
 
 	// Capacity
 	template<typename T>
-	bool Vector<T>::empty() const { return m_size == 0; }
+	bool Vector<T>::empty() const noexcept { return m_size == 0; }
 
 	template<typename T>
-	size_t Vector<T>::size() const { return m_size; }
+	size_t Vector<T>::size() const noexcept { return m_size; }
 
 	template<typename T>
 	void Vector<T>::reserve(size_t capacity) {

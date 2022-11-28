@@ -29,21 +29,14 @@ int main()
 {
     Vector<int> vec = { 4, 5, 6 };
     LinkedList<int> list{ 1, 2, 3 };
-    //for (int i = 0; i < 4; ++i) {
-    //    list.insert(list.begin() + i, i);
-    //}
-    //list.insert(list.end(), vec.begin(), vec.end());
-    //printIterate(list);
-    //vec.insert(vec.end(), list.begin(), list.end());
-    //printIterate(vec);
-    //auto it = vec.erase(vec.begin(), vec.end());
-    //printIterate(vec);
-    //std::vector<int> test_vec{ 1, 2, 3 };
     vec.insert(vec.end(), vec.begin(), vec.end());
+    printIterate(vec);
     list.insert(list.begin(), vec.begin(), vec.end());
     printIterate(list);
     list.erase(list.begin() + 2, list.begin() + 5);
     printIterate(list);
+    vec.erase(vec.begin() + 1, vec.end() - 1);
+    printIterate(vec);
     return 0;
 }
 

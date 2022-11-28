@@ -42,63 +42,22 @@ namespace Containers {
 		const T& back() const;
 
 		// Iterators
-		class Iterator {
-		public:
-			Iterator() : m_pointer(nullptr) {}
+		class Iterator;
 
-			Iterator(struct ListNode* pointer) : m_pointer(pointer) {}
+		Iterator begin() noexcept;
 
-			Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
+		const Iterator begin() const noexcept;
 
-			bool operator==(const Iterator&) const;
+		Iterator end() noexcept;
 
-			bool operator!=(const Iterator&) const;
-
-			Iterator& operator++();
-
-			Iterator operator++(int);
-
-			Iterator operator+(int) const;
-
-			Iterator& operator+=(int);
-
-			Iterator& operator--();
-
-			Iterator operator--(int);
-
-			Iterator operator-(int) const;
-
-			Iterator& operator-=(int);
-
-			size_t operator-(const Iterator&) const;
-
-			T& operator*();
-
-			const T& operator*() const;
-
-			T* operator->();
-
-			const T* operator->() const;
-
-		private:
-			struct ListNode* m_pointer;
-			friend class LinkedList;
-		};
-
-		Iterator begin();
-
-		const Iterator begin() const;
-
-		Iterator end();
-
-		const Iterator end() const;
+		const Iterator end() const noexcept;
 
 		Iterator find(const T&) const;
 
 		// Capacity
-		size_t size() const;
+		size_t size() const noexcept;
 
-		bool empty() const;
+		bool empty() const noexcept;
 
 		// Modifiers
 		void clear() noexcept;
@@ -145,17 +104,10 @@ namespace Containers {
 
 		void swap(LinkedList&) noexcept;
 
+		// Operations
+
 	private:
-		struct ListNode {
-			T value;
-			ListNode* next;
-			ListNode* prev;
-			ListNode() : prev(nullptr), next(nullptr) {}
-			ListNode(const T& value) :
-				value(value), prev(nullptr), next(nullptr) {}
-			ListNode(T&& value) :
-				value(std::move(value)), prev(nullptr), next(nullptr) {}
-		};
+		struct ListNode; 
 
 		ListNode* m_head;
 		ListNode* m_tail;
@@ -171,6 +123,61 @@ namespace Containers {
 		void erase(ListNode*);
 	};
 
+	template<typename T>
+	class LinkedList<T>::Iterator {
+	public:
+		Iterator() : m_pointer(nullptr) {}
+
+		Iterator(ListNode* pointer) : m_pointer(pointer) {}
+
+		Iterator(const Iterator& other) : m_pointer(other.m_pointer) {}
+
+		bool operator==(const Iterator&) const;
+
+		bool operator!=(const Iterator&) const;
+
+		Iterator& operator++();
+
+		Iterator operator++(int);
+
+		Iterator operator+(int) const;
+
+		Iterator& operator+=(int);
+
+		Iterator& operator--();
+
+		Iterator operator--(int);
+
+		Iterator operator-(int) const;
+
+		Iterator& operator-=(int);
+
+		size_t operator-(const Iterator&) const;
+
+		T& operator*();
+
+		const T& operator*() const;
+
+		T* operator->();
+
+		const T* operator->() const;
+
+	private:
+		ListNode* m_pointer;
+		friend class LinkedList;
+	};
+
+	template<typename T>
+	struct LinkedList<T>::ListNode {
+		T value;
+		ListNode* next;
+		ListNode* prev;
+		ListNode() : value(), prev(nullptr), next(nullptr) {}
+		ListNode(const T& value) :
+			value(value), prev(nullptr), next(nullptr) {}
+		ListNode(T&& value) :
+			value(std::move(value)), prev(nullptr), next(nullptr) {}
+	};
 
 	template<typename T>
 	LinkedList<T>::LinkedList() :
@@ -349,22 +356,22 @@ namespace Containers {
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::begin() {
+	typename LinkedList<T>::Iterator LinkedList<T>::begin() noexcept {
 		return Iterator(m_head);
 	}
 
 	template<typename T>
-	const typename LinkedList<T>::Iterator LinkedList<T>::begin() const {
+	const typename LinkedList<T>::Iterator LinkedList<T>::begin() const noexcept {
 		return Iterator(m_head);
 	}
 
 	template<typename T>
-	typename LinkedList<T>::Iterator LinkedList<T>::end() {
+	typename LinkedList<T>::Iterator LinkedList<T>::end() noexcept {
 		return Iterator(m_tail);
 	}
 
 	template<typename T>
-	const typename LinkedList<T>::Iterator LinkedList<T>::end() const {
+	const typename LinkedList<T>::Iterator LinkedList<T>::end() const noexcept {
 		return Iterator(m_tail);
 	}
 
@@ -378,10 +385,10 @@ namespace Containers {
 
 	// Capacity
 	template<typename T>
-	size_t LinkedList<T>::size() const { return m_size; }
+	size_t LinkedList<T>::size() const noexcept { return m_size; }
 
 	template<typename T>
-	bool LinkedList<T>::empty() const { return m_size == 0; }
+	bool LinkedList<T>::empty() const noexcept { return m_size == 0; }
 
 	// Modifiers
 	template<typename T>
