@@ -1,6 +1,7 @@
 #pragma once
 #include <initializer_list>
 #include <iostream>
+#include <type_traits>
 #include <utility>
 #include "globals.h"
 #include "exception.h"
@@ -10,64 +11,37 @@ namespace Containers {
 	template<typename T>
 	class LinkedList {
 	public:
-		LinkedList() :
-			m_head(nullptr), m_tail(new ListNode()), m_size(0) {}
+		LinkedList();
 
-		LinkedList(size_t size, const T& init_val) :
-			LinkedList() {
-			insert_n(nullptr, size, init_val);
-		}
+		LinkedList(size_t, const T&);
 
-		LinkedList(std::initializer_list<T> il) :
-			LinkedList() {
-			insert_range(nullptr, il.begin(), il.end());
-		}
+		template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
+		LinkedList(IT, IT);
 
-		LinkedList(const LinkedList& other) :
-			LinkedList() {
-			insert_range(0, other.begin(), other.end());
-		}
+		LinkedList(const LinkedList&);
 
-		LinkedList(LinkedList&& other) :
-			LinkedList() {
-			insert_range(0, other.begin(), other.end());
-		}
+		LinkedList(LinkedList&&) noexcept;
 
-		~LinkedList() {
-			while (size()) pop_back();
-			delete m_tail;
-		}
+		LinkedList(std::initializer_list<T>);
 
-		size_t size() const;
+		~LinkedList();
 
-		bool empty() const;
-
-		void push_back(const T&);
-
-		void push_back(T&&);
-
-		void push_front(const T&);
-
-		void push_front(T&&);
-
-		template<typename...Args>
-		void emplace_back(Args&&...);
-
-		template<typename...Args>
-		void emplace_front(Args&&...);
-
-		void pop_back();
-
-		void pop_front();
-
-		T& front();
+		LinkedList& operator=(const LinkedList&);
 		
+		LinkedList& operator=(LinkedList&&) noexcept;
+		
+		LinkedList& operator=(std::initializer_list<T>);
+
+		// Element Access
+		T& front();
+
 		const T& front() const;
 
 		T& back();
 
 		const T& back() const;
 
+		// Iterators
 		class Iterator {
 		public:
 			Iterator() : m_pointer(nullptr) {}
@@ -121,6 +95,14 @@ namespace Containers {
 
 		Iterator find(const T&) const;
 
+		// Capacity
+		size_t size() const;
+
+		bool empty() const;
+
+		// Modifiers
+		void clear() noexcept;
+
 		template<typename...Args>
 		Iterator emplace(const Iterator, Args&&...);
 
@@ -130,7 +112,7 @@ namespace Containers {
 
 		void insert(const Iterator, size_t, const T&);
 
-		template<class IT>
+		template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
 		void insert(const Iterator, IT, IT);
 
 		void insert(const Iterator, std::initializer_list<T>);
@@ -138,6 +120,30 @@ namespace Containers {
 		Iterator erase(const Iterator);
 
 		Iterator erase(const Iterator, const Iterator);
+
+		void push_back(const T&);
+
+		void push_back(T&&);
+
+		template<typename...Args>
+		void emplace_back(Args&&...);
+
+		void pop_back();
+
+		void push_front(const T&);
+
+		void push_front(T&&);
+
+		template<typename...Args>
+		void emplace_front(Args&&...);
+
+		void pop_front();
+
+		void resize(size_t);
+
+		void resize(size_t, const T&);
+
+		void swap(LinkedList&) noexcept;
 
 	private:
 		struct ListNode {
@@ -157,81 +163,73 @@ namespace Containers {
 
 		void insert_between(ListNode*, ListNode*, ListNode*);
 
-		void erase(ListNode*);
-
 		void insert_n(ListNode*, size_t, const T&);
 
 		template<class IT>
 		void insert_range(ListNode*, IT, IT);
+
+		void erase(ListNode*);
 	};
 
+
 	template<typename T>
-	void LinkedList<T>::insert_n(ListNode* start, size_t n, const T& value) {
-		for (size_t i = 0; i < n; ++i)
-			push_back(value);
+	LinkedList<T>::LinkedList() :
+		m_head(nullptr), m_tail(new ListNode()), m_size(0) {}
+
+	template<typename T>
+	LinkedList<T>::LinkedList(size_t size, const T& init_val) :
+		LinkedList() {
+		insert_n(nullptr, size, init_val);
 	}
 
 	template<typename T>
-	template<class IT>
-	void LinkedList<T>::insert_range(ListNode* start, IT first, IT last) {
-		for (IT it = first; it != last; ++it)
-			push_back(*it);
+	template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
+	LinkedList<T>::LinkedList(IT first, IT last) :
+		LinkedList() {
+		insert_range(0, first, last);
 	}
 
 	template<typename T>
-	void LinkedList<T>::insert_between(ListNode* new_node, ListNode* prev, ListNode* next) {
-		new_node->prev = prev;
-		new_node->next = next;
-		if (prev) prev->next = new_node;
-		else m_head = new_node;
-		next->prev = new_node;
-		++m_size;
+	LinkedList<T>::LinkedList(const LinkedList& other) :
+		LinkedList(other.begin(), other.end()) {}
+
+	template<typename T>
+	LinkedList<T>::LinkedList(LinkedList&& other) noexcept :
+		m_head(std::move(other.m_head)), 
+		m_tail(std::move(other.m_tail)), 
+		m_size(std::move(other.m_size)) {}
+
+	template<typename T>
+	LinkedList<T>::LinkedList(std::initializer_list<T> il) :
+		LinkedList(il.begin(), il.end()) {}
+
+	template<typename T>
+	LinkedList<T>::~LinkedList() {
+		clear();
+		delete m_tail;
 	}
 
 	template<typename T>
-	size_t LinkedList<T>::size() const { return m_size; }
-
-	template<typename T>
-	bool LinkedList<T>::empty() const { return m_size == 0; }
-
-	template<typename T>
-	void LinkedList<T>::push_back(const T& value) {
-		ListNode* new_node = new ListNode(value);
-		insert_between(new_node, m_tail->prev, m_tail);
+	LinkedList<T>& LinkedList<T>::operator=(const LinkedList& other) {
+		LinkedList<T> temp(other);
+		temp.swap(*this);
+		return *this;
 	}
 
 	template<typename T>
-	void LinkedList<T>::push_back(T&& value) {
-		ListNode* new_node = new ListNode(std::move(value));
-		insert_between(new_node, m_tail->prev, m_tail);
+	LinkedList<T>& LinkedList<T>::operator=(LinkedList&& other) noexcept {
+		other.swap(*this);
+		return *this;
 	}
 
 	template<typename T>
-	void LinkedList<T>::push_front(const T& value) {
-		ListNode* new_node = new ListNode(value);
-		insert_between(new_node, nullptr, m_head);
+	LinkedList<T>& LinkedList<T>::operator=(std::initializer_list<T> il) {
+		LinkedList<T> temp(il);
+		temp.swap(*this);
+		return *this;
 	}
 
-	template<typename T>
-	void LinkedList<T>::push_front(T&& value) {
-		ListNode* new_node = new ListNode(std::move(value));
-		insert_between(new_node, nullptr, m_head);
-	}
-
-	template<typename T>
-	template<typename...Args>
-	void LinkedList<T>::emplace_back(Args&&...args) {
-		ListNode* new_node = new ListNode(T(std::forward<Args>(args)...));
-		insert_between(new_node, m_tail->prev, m_tail);
-	}
-
-	template<typename T>
-	template<typename...Args>
-	void LinkedList<T>::emplace_front(Args&&...args) {
-		ListNode* new_node = new ListNode(T(std::forward<Args>(args)...));
-		insert_between(new_node, nullptr, m_head);
-	}
-
+	// Element Access
 	template<typename T>
 	T& LinkedList<T>::front() {
 		if (!m_head) throw OutOfRangeException("LinkedList");
@@ -256,28 +254,7 @@ namespace Containers {
 		return m_tail->prev->value;
 	}
 
-	template<typename T>
-	void LinkedList<T>::erase(ListNode* node) {
-		if (!node) throw OutOfRangeException("LinkedList");
-		if (node->prev)
-			node->prev->next = node->next;
-		else 
-			m_head = node->next;
-		node->next->prev = node->prev;
-		delete node;
-		--m_size;
-	}
-
-	template<typename T>
-	void LinkedList<T>::pop_back() {
-		erase(m_tail->prev);
-	}
-
-	template<typename T>
-	void LinkedList<T>::pop_front() {
-		erase(m_head);
-	}
-
+	// Iterators
 	template<typename T>
 	bool LinkedList<T>::Iterator::operator==(const Iterator& other) const {
 		return m_pointer == other.m_pointer;
@@ -399,6 +376,19 @@ namespace Containers {
 		return end();
 	}
 
+	// Capacity
+	template<typename T>
+	size_t LinkedList<T>::size() const { return m_size; }
+
+	template<typename T>
+	bool LinkedList<T>::empty() const { return m_size == 0; }
+
+	// Modifiers
+	template<typename T>
+	void LinkedList<T>::clear() noexcept {
+		erase(begin(), end());
+	}
+
 	template<typename T>
 	template<typename...Args>
 	typename LinkedList<T>::Iterator LinkedList<T>::emplace(const Iterator pos, Args&&...args) {
@@ -409,7 +399,7 @@ namespace Containers {
 
 	template<typename T>
 	typename LinkedList<T>::Iterator LinkedList<T>::insert(const Iterator pos, const T& value) {
-		insert(pos, (size_t) 1, value);
+		insert(pos, (size_t)1, value);
 		return pos - 1;
 	}
 
@@ -428,7 +418,7 @@ namespace Containers {
 	}
 
 	template<typename T>
-	template<class IT>
+	template<class IT, std::enable_if_t<!std::is_integral<IT>::value>...>
 	void LinkedList<T>::insert(const Iterator pos, IT first, IT last) {
 		Iterator cur = pos;
 		for (IT it = first; it != last; ++it) {
@@ -443,15 +433,122 @@ namespace Containers {
 
 	template<typename T>
 	typename LinkedList<T>::Iterator LinkedList<T>::erase(const Iterator pos) {
+		ListNode* next = pos.m_pointer->next;
 		erase(pos.m_pointer);
+		return Iterator(next);
 	}
 
 	template<typename T>
 	typename LinkedList<T>::Iterator LinkedList<T>::erase(const Iterator first, const Iterator last) {
 		size_t dis = last - first;
-		for (Iterator it = first; it != last; ++it) {
-			erase(it);
+		Iterator it = first;
+		for (; it != last; it = erase(it));
+		return it;
+	}
+
+	template<typename T>
+	void LinkedList<T>::push_back(const T& value) {
+		ListNode* new_node = new ListNode(value);
+		insert_between(new_node, m_tail->prev, m_tail);
+	}
+
+	template<typename T>
+	void LinkedList<T>::push_back(T&& value) {
+		ListNode* new_node = new ListNode(std::move(value));
+		insert_between(new_node, m_tail->prev, m_tail);
+	}
+
+	template<typename T>
+	void LinkedList<T>::push_front(const T& value) {
+		ListNode* new_node = new ListNode(value);
+		insert_between(new_node, nullptr, m_head);
+	}
+
+	template<typename T>
+	void LinkedList<T>::push_front(T&& value) {
+		ListNode* new_node = new ListNode(std::move(value));
+		insert_between(new_node, nullptr, m_head);
+	}
+
+	template<typename T>
+	template<typename...Args>
+	void LinkedList<T>::emplace_back(Args&&...args) {
+		ListNode* new_node = new ListNode(T(std::forward<Args>(args)...));
+		insert_between(new_node, m_tail->prev, m_tail);
+	}
+
+	template<typename T>
+	template<typename...Args>
+	void LinkedList<T>::emplace_front(Args&&...args) {
+		ListNode* new_node = new ListNode(T(std::forward<Args>(args)...));
+		insert_between(new_node, nullptr, m_head);
+	}
+
+	template<typename T>
+	void LinkedList<T>::resize(size_t size) {
+		resize(size, T());
+	}
+
+	template<typename T>
+	void LinkedList<T>::resize(size_t size, const T& value) {
+		if (size < m_size) {
+			erase(begin() + size, end());
 		}
-		return first;
+		else if (size > m_size) {
+			insert_n(end(), size - m_size, value);
+		}
+	}
+
+	template<typename T>
+	void LinkedList<T>::swap(LinkedList& other) noexcept {
+		std::swap(m_head, other.m_head);
+		std::swap(m_tail, other.m_tail);
+		std::swap(m_size, other.m_size);
+	}
+
+	template<typename T>
+	void LinkedList<T>::pop_back() {
+		erase(m_tail->prev);
+	}
+
+	template<typename T>
+	void LinkedList<T>::pop_front() {
+		erase(m_head);
+	}
+
+	// Private Members
+	template<typename T>
+	void LinkedList<T>::insert_n(ListNode* start, size_t n, const T& value) {
+		for (size_t i = 0; i < n; ++i)
+			push_back(value);
+	}
+
+	template<typename T>
+	template<class IT>
+	void LinkedList<T>::insert_range(ListNode* start, IT first, IT last) {
+		for (IT it = first; it != last; ++it)
+			push_back(*it);
+	}
+
+	template<typename T>
+	void LinkedList<T>::insert_between(ListNode* new_node, ListNode* prev, ListNode* next) {
+		new_node->prev = prev;
+		new_node->next = next;
+		if (prev) prev->next = new_node;
+		else m_head = new_node;
+		next->prev = new_node;
+		++m_size;
+	}
+
+	template<typename T>
+	void LinkedList<T>::erase(ListNode* node) {
+		if (!node) throw OutOfRangeException("LinkedList");
+		if (node->prev)
+			node->prev->next = node->next;
+		else
+			m_head = node->next;
+		node->next->prev = node->prev;
+		delete node;
+		--m_size;
 	}
 }

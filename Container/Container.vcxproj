@@ -132,6 +132,7 @@
     <ClCompile Include="globals.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base_iterator.h" />
     <ClInclude Include="exception.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="linked_list.h" />

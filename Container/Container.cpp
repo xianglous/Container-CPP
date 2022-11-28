@@ -40,7 +40,10 @@ int main()
     //printIterate(vec);
     //std::vector<int> test_vec{ 1, 2, 3 };
     vec.insert(vec.end(), vec.begin(), vec.end());
-    printIterate(vec);
+    list.insert(list.begin(), vec.begin(), vec.end());
+    printIterate(list);
+    list.erase(list.begin() + 2, list.begin() + 5);
+    printIterate(list);
     return 0;
 }
 
