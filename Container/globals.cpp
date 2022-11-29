@@ -6,4 +6,5 @@ namespace Global {
 	double Global::VECTOR_RESIZE_FACTOR = 2.0;
 	size_t Global::UNORDERED_MAP_INIT_BUCKET_COUNT = 16;
 	double Global::UNORDERED_MAP_INIT_LOAD_FACTOR = 1.0;
+	double Global::UNORDERED_MAP_RESIZE_FACTOR = 2.0;
 }

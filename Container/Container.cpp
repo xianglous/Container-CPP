@@ -29,6 +29,7 @@ int main()
 {
     Vector<int> vec = { 4, 5, 6 };
     LinkedList<int> list{ 1, 2, 3 };
+    printIterate(LinkedList<int>());
     vec.insert(vec.end(), vec.begin(), vec.end());
     printIterate(vec);
     list.insert(list.begin(), vec.begin(), vec.end());

@@ -181,7 +181,7 @@ namespace Containers {
 
 	template<typename T>
 	LinkedList<T>::LinkedList() :
-		m_head(nullptr), m_tail(new ListNode()), m_size(0) {}
+		m_head(new ListNode()), m_tail(m_head), m_size(0) {}
 
 	template<typename T>
 	LinkedList<T>::LinkedList(size_t size, const T& init_val) :

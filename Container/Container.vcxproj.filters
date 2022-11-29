@@ -41,5 +41,8 @@
     <ClInclude Include="base_iterator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="linked_list_iterator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

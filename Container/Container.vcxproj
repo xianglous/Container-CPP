@@ -136,6 +136,7 @@
     <ClInclude Include="exception.h" />
     <ClInclude Include="globals.h" />
     <ClInclude Include="linked_list.h" />
+    <ClInclude Include="linked_list_iterator.h" />
     <ClInclude Include="unordered_map.h" />
     <ClInclude Include="vector.h" />
   </ItemGroup>
